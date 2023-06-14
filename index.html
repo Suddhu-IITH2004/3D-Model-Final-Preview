@@ -7,31 +7,14 @@
       body {
         margin-top: 5px;
         background-color: black;
-        padding-left: 8%;
+        /* padding-left: 8%; */
       }
-
-      #buttons-container {
-        display: flex;
-        justify-content: center;
-        margin-top: 20px;
-        padding-left: 5px;
-      }
-
-      .button {
+      button {
         margin: 0 10;
         margin-left: 20;
         padding: 10px 20px;
         font-size: 16px;
         cursor: pointer;
-      }
-
-      .fullscreen {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 9999;
       }
 
       .heading {
@@ -41,15 +24,20 @@
         font-size: larger;
       }
 
-      
-
       .top-right-button {
         position: absolute;
         top: 10px;
         right: 10px;
       }
-
-    
+      #buttons-container{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-left: 13px;
+      }
+      #canvas-container{
+        padding-left: 8%;
+      }
     </style>
   </head>
 
@@ -60,14 +48,13 @@
       </div>
     </section>
     <div id="canvas-container"></div>
-    <div class="buttons">
+    <div id="buttons-container">
       <!-- <button class="left-box-btn">Zoom in left box</button> -->
       <button class="horses-button">Zoom in horses</button>
       <!-- <button class="right-box-btn">Zoom in right box</button> -->
       <button class="original-btn">Back to original</button>
-    </div>
-    <div class="mode">
       <button><a href="vr-mode.html" id="vr">Allow VR</a></button>
+      <button class="full-screen">Full Screen</button>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.3.2/dist/html2canvas.min.js"></script>
@@ -101,6 +88,7 @@
       const originalBtn = document.querySelector(".original-btn");
       const horsesBtn = document.querySelector(".horses-button");
       const rightZoomBtn = document.querySelector(".right-box-btn");
+      const fullScreen=document.querySelector(".full-screen");
 
       const zoomInTimeline = (
         x,
@@ -112,7 +100,7 @@
         // zzfactor = 0,
         // azimuthalAngle
       ) => {
-        let z3=-5;
+        let z3 = -5;
         let tl = gsap
           .timeline({ defaults: { duration: 1.0, ease: "expo.out" } })
           .to(controls.target, { x0, y, z0 })
@@ -147,7 +135,14 @@
       });
 
       originalBtn.addEventListener("click", () => {
-        zoomInTimeline(4*Math.sin(controls.getAzimuthalAngle()), 0, 0, 4*Math.cos(controls.getAzimuthalAngle()), 0, 0);
+        zoomInTimeline(
+          4 * Math.sin(controls.getAzimuthalAngle()),
+          0,
+          0,
+          4 * Math.cos(controls.getAzimuthalAngle()),
+          0,
+          0
+        );
         setTimeout(function () {
           // //console.log("After the 5-second delay");
           zoom1 = false;
@@ -158,6 +153,7 @@
       //   zoomInTimeline(2, 0.75, -2, 0, 5);
       //   zoom1 = true;
       // });
+         
 
       // Load 3D model
       const loader = new THREE.GLTFLoader();
@@ -192,7 +188,7 @@
                 model.visible = false;
                 imagePlane.visible = true;
                 controls.enableRotate = false;
-                imagePlane.position.set(0,0,0);
+                imagePlane.position.set(0, 0, 0);
                 //imagePlane.rotation.y =controls.getAzimuthalAngle();
               }
             } else {
@@ -239,7 +235,6 @@
       controls.maxPolarAngle = Math.PI / 2; // radians
       controls.maxDistance = 8;
 
-
       // Image display
       var imageTexture = new THREE.TextureLoader().load("0_0.jpg");
       var imageMaterial = new THREE.MeshBasicMaterial({ map: imageTexture });
@@ -272,47 +267,40 @@
         angle = controls.getAzimuthalAngle();
         if (angle < -0.5 && angle >= -0.7) {
           //console.log("Horses-Image-1");
-          imagePlane.position.set(2,0.5,-3);
-          imagePlane.rotation.y=-0.39529;
+          imagePlane.position.set(2, 0.5, -3);
+          imagePlane.rotation.y = -0.39529;
           return "horses/0_n39529146908504154.jpg";
-        }
-        else  if (angle < -0.3 && angle >= -0.5) {
+        } else if (angle < -0.3 && angle >= -0.5) {
           //console.log("Horses-Image-1");
-          imagePlane.position.set(1,0.5,-3);
-          imagePlane.rotation.y=-0.3;
+          imagePlane.position.set(1, 0.5, -3);
+          imagePlane.rotation.y = -0.3;
           return "horses/0_n35473053760288287.jpg";
-        }
-        else  if (angle < -0.2 && angle >= -0.3 ) {
+        } else if (angle < -0.2 && angle >= -0.3) {
           //console.log("Horses-Image-1");
-          imagePlane.position.set(2,0.5,-4);
-          imagePlane.rotation.y=0.14214;
+          imagePlane.position.set(2, 0.5, -4);
+          imagePlane.rotation.y = 0.14214;
           return "horses/0_14214335911770237.jpg";
-        }
-        else  if (angle < 0.0 && angle >= -0.2 ) {
+        } else if (angle < 0.0 && angle >= -0.2) {
           //console.log("Horses-Image-1");
-          imagePlane.position.set(1,0.5,-4);
-          imagePlane.rotation.y=0.14214;
+          imagePlane.position.set(1, 0.5, -4);
+          imagePlane.rotation.y = 0.14214;
           return "horses/0_14214335911770237.jpg";
-        }
-        else  if (angle <= 0.2 && angle >= 0.0 ) {
+        } else if (angle <= 0.2 && angle >= 0.0) {
           //console.log("Horses-Image-1");
-          imagePlane.position.set(0,0.5,-4);
-          imagePlane.rotation.y=0.14214;
+          imagePlane.position.set(0, 0.5, -4);
+          imagePlane.rotation.y = 0.14214;
           return "horses/0_14214335911770237.jpg";
-        }
-        else  if (angle <= 0.42734 && angle > 0.2) {
+        } else if (angle <= 0.42734 && angle > 0.2) {
           //console.log("Horses-Image-1");
-          imagePlane.position.set(-1,0.5,-4);
-          imagePlane.rotation.y=0.2;
+          imagePlane.position.set(-1, 0.5, -4);
+          imagePlane.rotation.y = 0.2;
           return "horses/0_18988753104179357.jpg";
-        }
-        else  {
+        } else {
           //console.log("Horses-Image-1");
-          imagePlane.position.set(-3,0.5,-4);
-          imagePlane.rotation.y=0.42734;
+          imagePlane.position.set(-3, 0.5, -4);
+          imagePlane.rotation.y = 0.42734;
           return "horses/0_4273465362722484.jpg";
         }
-
       }
 
       // Off-screen renderer
@@ -381,19 +369,16 @@
       }
 
       // Full screen button
-      const fullScreenButton = document.createElement("button");
-      fullScreenButton.innerHTML = "Full Screen";
-      fullScreenButton.classList.add("button");
-      fullScreenButton.addEventListener("click", function () {
-        enterFullscreen();
-      });
+      fullScreen.addEventListener("click",function () {
+         enterFullscreen();
+        });
 
       // Enter fullscreen mode
       function enterFullscreen() {
         const canvasContainer = document.getElementById("canvas-container");
         if (canvasContainer.requestFullscreen) {
           canvasContainer.requestFullscreen();
-          renderer.setSize(window.innerWidth * 1, window.innerHeight * 1);
+          renderer.setSize(window.innerWidth * 1.5, window.innerHeight * 1.5);
         } else if (canvasContainer.mozRequestFullScreen) {
           // Firefox
           canvasContainer.mozRequestFullScreen();
@@ -530,11 +515,11 @@
       });
 
       // Append button to the buttons container
-      const buttonsContainer = document.createElement("div");
+      const buttonsContainer = document.createElement("span");
       buttonsContainer.id = "buttons-container";
       // buttonsContainer.appendChild(screenshotButton);
       // document.body.appendChild(buttonsContainer);
-      buttonsContainer.appendChild(fullScreenButton);
+      // buttonsContainer.appendChild(fullScreenButton);
       document.body.appendChild(buttonsContainer);
       // Append the button to the canvas container{
       const canvasContainer = document.getElementById("canvas-container");
