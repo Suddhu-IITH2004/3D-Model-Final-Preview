@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VR-Checker</title>
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+
+        #c {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .mode {
+            position: absolute;
+            right: 1em;
+            top: 1em;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="c"></canvas>
+    <div class="mode">
+        <a href="?allowvr=true" id="vr">Allow VR</a>
+        <a href="index.html" id="nonvr">Use Non-VR Mode</a>
+    </div>
+    <script type="importmap">{
+        "imports": {
+            "three": "https://threejs.org/build/three.module.js",
+            "three/addons/": "https://threejs.org/examples/jsm/"
+        }
+    }</script><!-- Remove this when import maps will be widely supported -->
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    <script type="module">
+        // Three.js - WebXR - Basic w/background and GLTF loader
+        // from https://threejs.org/examples/webxr_vr_dragging
+
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { VRButton } from 'three/addons/webxr/VRButton.js';
+
+        function main() {
+            const canvas = document.querySelector('#c');
+            const renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
+
+            const fov = 50;
+            const aspect = 2; // the canvas default
+            const near = 0.1;
+            const far = 10000;
+            const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+            camera.position.set(0, 1.6, 0);
+            const params = (new URL(document.location)).searchParams;
+            const allowvr = params.get('allowvr') === 'true';
+            if (allowvr) {
+                renderer.xr.enabled = true;
+                document.body.appendChild(VRButton.createButton(renderer));
+                document.querySelector('#vr').style.display = 'none';
+            }
+
+            const scene = new THREE.Scene();
+            {
+                const loader = new THREE.CubeTextureLoader();
+                const texture = loader.load([
+                    'https://threejs.org/manual/examples/resources/images/grid-1024.png',
+                    'https://threejs.org/manual/examples/resources/images/grid-1024.png',
+                    'https://threejs.org/manual/examples/resources/images/grid-1024.png',
+                    'https://threejs.org/manual/examples/resources/images/grid-1024.png',
+                    'https://threejs.org/manual/examples/resources/images/grid-1024.png',
+                    'https://threejs.org/manual/examples/resources/images/grid-1024.png',
+                ]);
+                scene.background = texture;
+            }
+
+            {
+                const color = 0xFFFFFF;
+                const intensity = 1;
+                const light = new THREE.DirectionalLight(color, intensity);
+                light.position.set(-1, 2, 4);
+                scene.add(light);
+            }
+
+            const loader = new GLTFLoader();
+            loader.load('model.gltf', function (gltf) {
+                const model = gltf.scene;
+                scene.add(model);
+                model.position.set(0, 0.8, -2.5);
+                model.rotation.set(0, 0, 0); // Set initial rotation
+
+                // Variables for joystick rotation
+                let isDragging = false;
+                let previousMousePosition = {
+                    x: 0,
+                    y: 0
+                };
+
+                // Event listeners for joystick rotation
+                canvas.addEventListener('mousedown', onMouseDown);
+                canvas.addEventListener('mouseup', onMouseUp);
+                canvas.addEventListener('mousemove', onMouseMove);
+
+                function onMouseDown(event) {
+                    isDragging = true;
+                    previousMousePosition = {
+                        x: event.clientX,
+                        y: event.clientY
+                    };
+                }
+
+                function onMouseUp() {
+                    isDragging = false;
+                }
+
+                function onMouseMove(event) {
+                    if (isDragging) {
+                        const deltaMove = {
+                            x: event.clientX - previousMousePosition.x,
+                            y: event.clientY - previousMousePosition.y
+                        };
+
+                        const deltaRotationQuaternion = new THREE.Quaternion()
+                            .setFromEuler(new THREE.Euler(
+                                toRadians(deltaMove.y * 1),
+                                toRadians(deltaMove.x * 1),
+                                0,
+                                'XYZ'
+                            ));
+
+                        model.quaternion.multiplyQuaternions(deltaRotationQuaternion, model.quaternion);
+
+                        previousMousePosition = {
+                            x: event.clientX,
+                            y: event.clientY
+                        };
+                    }
+                }
+
+                function toRadians(angle) {
+                    return angle * (Math.PI / 180);
+                }
+            });
+
+            // Event listener for VR controller movement
+            window.addEventListener('xrcontrollermove', handleControllerMove);
+
+            function handleControllerMove(event) {
+                const controller = event.detail.controller;
+                const model = scene.children[0];
+
+                const speed = 0.05;
+                const direction = new THREE.Vector3();
+
+                if (controller.axes.length === 2) {
+                    const [x, y] = controller.axes;
+
+                    direction.set(x, 0, -y);
+                    direction.applyQuaternion(camera.quaternion);
+                    direction.normalize();
+
+                    model.position.add(direction.multiplyScalar(speed));
+                }
+            }
+
+            function resizeRendererToDisplaySize(renderer) {
+                const canvas = renderer.domElement;
+                const width = canvas.clientWidth;
+                const height = canvas.clientHeight;
+                const needResize = canvas.width !== width || canvas.height !== height;
+                if (needResize) {
+                    renderer.setSize(width, height, false);
+                }
+                return needResize;
+            }
+
+            function render(time) {
+                time *= 0.001;
+
+                if (resizeRendererToDisplaySize(renderer)) {
+                    const canvas = renderer.domElement;
+                    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+                    camera.updateProjectionMatrix();
+                }
+
+                renderer.render(scene, camera);
+            }
+
+            renderer.setAnimationLoop(render);
+        }
+
+        main();
+    </script>
+</body>
+
+</html>

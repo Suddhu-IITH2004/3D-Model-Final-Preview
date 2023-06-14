@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>3D Model and Image Display</title>
+    <style>
+      body {
+        margin-top: 5px;
+        background-color: rgb(19, 19, 19);
+        padding-left: 8%;
+      }
+
+      #buttons-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+        padding-left: 5px;
+      }
+
+      .button {
+        margin: 0 10;
+        margin-left: 20;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+
+      .fullscreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 9999;
+      }
+
+      .heading {
+        color: blue;
+        padding-left: 40%;
+        font-weight: bolder;
+        font-size: larger;
+      }
+
+      .name {
+        color: aquamarine;
+        padding-left: 40%;
+      }
+
+      .loader {
+        border: 8px solid #f3f3f3;
+        border-top: 8px solid #3498db;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        animation: spin 2s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .top-right-button {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+      }
+
+      .mode {
+        position: absolute;
+        left: 1em;
+        top: 1em;
+      }
+
+      .buttons {
+        position: fixed;
+        margin: 25px;
+        bottom: 0;
+
+        button {
+          cursor: pointer;
+          padding: 15px;
+          border: none;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <section class="content">
+      <div class="heading">
+        <h1>3D-IMAGE VIEWER</h1>
+      </div>
+    </section>
+    <div id="canvas-container"></div>
+    <div class="buttons">
+      <button class="left-box-btn">Zoom in left box</button>
+      <button class="horses-button">Zoom in horses</button>
+      <button class="right-box-btn">Zoom in right box</button>
+      <button class="original-btn">Back to original</button>
+    </div>
+    <div class="mode">
+      <button><a href="vr-mode.html" id="vr">Allow VR</a></button>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.3.2/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.1/gsap.min.js"
+      integrity="sha512-qF6akR/fsZAB4Co1QDDnUXWnaQseLGXoniuSuSlPQK6+aWhlMZcHzkasCSlnWoe+TJuudlka1/IQ01Dnhgq95g=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script>
+      // Scene setup
+      var scene = new THREE.Scene();
+      var camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      // Set camera position
+      camera.position.z = 5;
+      let zoom1 = false;
+      var renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth * 0.8, window.innerHeight * 0.8);
+      document
+        .getElementById("canvas-container")
+        .appendChild(renderer.domElement);
+      const canvas = document.querySelector("#canvas-container");
+      const leftZoomBtn = document.querySelector(".left-box-btn");
+      const originalBtn = document.querySelector(".original-btn");
+      const horsesBtn = document.querySelector(".horses-button");
+      const rightZoomBtn = document.querySelector(".right-box-btn");
+
+      const zoomInTimeline = (
+        x,
+        x0,
+        y,
+        z,
+        z0,
+        zoomOutFactor = 0
+        // zzfactor = 0,
+        // azimuthalAngle
+      ) => {
+        let tl = gsap
+          .timeline({ defaults: { duration: 1.5, ease: "expo.out" } })
+          .to(controls.target, { x0, y, z0 })
+          .to(camera.position, { x, y, z: z + zoomOutFactor }, 0);
+        console.log(camera.position);
+        console.log(controls.object.position.distanceTo(controls.target));
+        console.log(camera.position);
+
+        // Additional step to update the azimuthal angle
+        // controls.azimuthalAngle = azimuthalAngle;
+      };
+      leftZoomBtn.addEventListener("click", () => {
+        zoomInTimeline(-2, 0.75, -2, 0, 5);
+        zoom1 = true;
+      });
+      horsesBtn.addEventListener("click", () => {
+        zoomInTimeline(
+          1.5 * Math.sin(controls.getAzimuthalAngle()),
+          0,
+          1.1,
+          1.5 * Math.cos(controls.getAzimuthalAngle()),
+          -3.5,
+          0
+        );
+        zoom1 = true;
+      });
+
+      originalBtn.addEventListener("click", () => {
+        zoomInTimeline(0, 0, 0, 0, 0, 5);
+        setTimeout(function () {
+          console.log("After the 5-second delay");
+          zoom1 = false;
+        }, 1500);
+      });
+
+      rightZoomBtn.addEventListener("click", () => {
+        zoomInTimeline(2, 0.75, -2, 0, 5);
+        zoom1 = true;
+      });
+
+      // Load 3D model
+      const loader = new THREE.GLTFLoader();
+      var model;
+      loader.load(
+        "scene.gltf",
+        function (gltf) {
+          // Center the model
+          const bbox = new THREE.Box3().setFromObject(gltf.scene);
+          const center = bbox.getCenter(new THREE.Vector3());
+          console.log(center);
+          const offset = new THREE.Vector3(0, -0.6, 0);
+          center.add(offset);
+          gltf.scene.position.sub(center);
+          console.log(center);
+          model = gltf.scene;
+          scene.add(model);
+          // Update function
+          function animate() {
+            requestAnimationFrame(animate);
+            console.log(controls.object.position.distanceTo(controls.target));
+            //console.log(controls.getAzimuthalAngle());
+
+            // Show/hide 3D model based on zoom level
+            if (
+              controls.object.position.distanceTo(controls.target) > 3 ||
+              zoom1
+            ) {
+              model.visible = true;
+              imagePlane.visible = false;
+              controls.enableRotate = true;
+            } else {
+              model.visible = false;
+              imagePlane.visible = true;
+              controls.enableRotate = false;
+              //imagePlane.rotation.y =controls.getAzimuthalAngle();
+            }
+            controls.update();
+            renderer.render(scene, camera);
+          }
+          animate();
+        },
+        undefined,
+        function (error) {
+          console.error(error);
+        }
+      );
+
+      // Lights
+      var ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+      scene.add(ambientLight);
+
+      var directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+      directionalLight.position.set(0, 2, 2);
+      scene.add(directionalLight);
+
+      // Orbit controls
+      var controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true; // Add smooth damping to the controls
+      controls.dampingFactor = 1.0; // Adjust the damping factor
+      controls.enablePan = false; // Disable panning if not needed
+      controls.minAzimuthAngle = -0.7;
+      controls.maxAzimuthAngle = 0.7;
+      controls.minPolarAngle = Math.PI / 2; // radians
+      controls.maxPolarAngle = Math.PI / 2; // radians
+      controls.maxDistance = 8;
+      controls.minDistance = 0.5;
+
+      // Image display
+      var imageTexture = new THREE.TextureLoader().load("0_0.jpg");
+      var imageMaterial = new THREE.MeshBasicMaterial({ map: imageTexture });
+      var imageGeometry = new THREE.PlaneGeometry(1.5 * 4, 4);
+      var imagePlane = new THREE.Mesh(imageGeometry, imageMaterial);
+      // imagePlane.position.x = 0; // Position the image in front of the camera
+      scene.add(imagePlane);
+
+      // Listen for the 'change' event
+      controls.addEventListener("change", function () {
+        if (model.visible) {
+          if (!zoom1) {
+            updateImageTexture();
+          }
+        }
+      });
+
+      // Function to update the imageTexture based on the current azimuthal angle
+      function updateImageTexture() {
+        imageTexture = new THREE.TextureLoader().load(getImage());
+        imageMaterial.map = imageTexture;
+      }
+
+      // Off-screen renderer
+      var offScreenRenderer = new THREE.WebGLRenderer({ alpha: true });
+      function getImage() {
+        angle = controls.getAzimuthalAngle();
+        if (angle >= -0.02744 && angle < 0.0764) {
+          console.log("0.0");
+          imagePlane.rotation.y = 0.0764;
+          return "outputs/0_0.jpg";
+        } else if (angle >= 0.0764 && angle < 0.2135) {
+          console.log("0.1");
+          imagePlane.rotation.y = 0.0764;
+          return "outputs/0_0.jpg";
+        } else if (angle >= 0.2135 && angle < 0.3778) {
+          console.log("0.2");
+          imagePlane.rotation.y = 0.2135;
+          return "outputs/0_2.jpg";
+        } else if (angle >= 0.3778 && angle < 0.52306) {
+          console.log("0.3");
+          imagePlane.rotation.y = 0.3778;
+          return "outputs/0_3.jpg";
+        }
+        // else if (angle >= 0.4 && angle < 0.5) {
+        //      console.log("0.4");
+        //      //imagePlane.rotation.y =;
+        //     return "outputs/0_4.jpg";
+        // }
+        else if (angle >= 0.52306 && angle < 0.649748) {
+          console.log("0.5");
+          imagePlane.rotation.y = 0.52306;
+          return "outputs/0_5.jpg";
+        } else if (angle >= 0.649748 && angle <= 0.7) {
+          console.log("0.6");
+          imagePlane.rotation.y = 0.649748;
+          return "outputs/0_6.jpg";
+        } else if (angle >= -0.12476 && angle < -0.02744) {
+          console.log("-0.1");
+          imagePlane.rotation.y = -0.02744;
+          return "outputs/0_n1.jpg";
+        } else if (angle >= -0.23646 && angle < -0.12476) {
+          console.log("-0.2");
+          imagePlane.rotation.y = -0.12476;
+          return "outputs/0_n2.jpg";
+        } else if (angle >= -0.3 && angle < -0.23646) {
+          console.log("-0.3");
+          imagePlane.rotation.y = -0.23646;
+          return "outputs/0_n4.jpg";
+        } else if (angle >= -0.4069 && angle < -0.3) {
+          console.log("-0.4");
+          imagePlane.rotation.y = -0.23646;
+          return "outputs/0_n4.jpg";
+        } else if (angle >= -0.5775 && angle < -0.4069) {
+          console.log("-0.5");
+          imagePlane.rotation.y = -0.4069;
+          return "outputs/0_n6.jpg";
+        } else if (angle >= -0.6 && angle < -0.5775) {
+          console.log("-0.7");
+          imagePlane.rotation.y = -0.5775;
+          return "outputs/0_n7.jpg";
+        } else {
+          console.log("-0.7");
+          imagePlane.rotation.y = -0.5775;
+          return "outputs/0_n7.jpg";
+        }
+      }
+
+      // Full screen button
+      const fullScreenButton = document.createElement("button");
+      fullScreenButton.innerHTML = "Full Screen";
+      fullScreenButton.classList.add("button");
+      fullScreenButton.addEventListener("click", function () {
+        enterFullscreen();
+      });
+
+      // Enter fullscreen mode
+      function enterFullscreen() {
+        const canvasContainer = document.getElementById("canvas-container");
+        if (canvasContainer.requestFullscreen) {
+          canvasContainer.requestFullscreen();
+          renderer.setSize(window.innerWidth * 1, window.innerHeight * 1);
+        } else if (canvasContainer.mozRequestFullScreen) {
+          // Firefox
+          canvasContainer.mozRequestFullScreen();
+        } else if (canvasContainer.webkitRequestFullscreen) {
+          // Chrome, Safari and Opera
+          canvasContainer.webkitRequestFullscreen();
+          renderer.setSize(window.innerWidth * 1, window.innerHeight * 1);
+        } else if (canvasContainer.msRequestFullscreen) {
+          // IE/Edge
+          canvasContainer.msRequestFullscreen();
+        }
+      }
+
+      // Exit fullscreen mode
+      function exitFullscreen() {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+          renderer.setSize(window.innerWidth * 0.8, window.innerHeight * 0.8);
+        } else if (document.mozCancelFullScreen) {
+          // Firefox
+          document.mozCancelFullScreen();
+        } else if (document.webkitExitFullscreen) {
+          // Chrome, Safari and Opera
+          document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+          // IE/Edge
+          document.msExitFullscreen();
+        }
+      }
+
+      // Listen for fullscreen change event
+      document.addEventListener("fullscreenchange", function () {
+        if (!document.fullscreenElement) {
+          exitFullscreen();
+        }
+      });
+
+      // Screenshot button
+      const screenshotButton = document.createElement("button");
+      screenshotButton.innerHTML = "Take Screenshot";
+      screenshotButton.classList.add("button", "top-right-button");
+      screenshotButton.addEventListener("click", function () {
+        takeScreenshot();
+      });
+      // Check zoom level and update button accordingly
+      function updateButton() {
+        if (controls.object.position.distanceTo(controls.target) > 3) {
+          screenshotButton.innerHTML = "Take Screenshot";
+          screenshotButton.addEventListener("click", takeScreenshot);
+          screenshotButton.removeEventListener("click", redirectToPage);
+        } else {
+          screenshotButton.innerHTML = "Play With your Image";
+          screenshotButton.removeEventListener("click", takeScreenshot);
+          screenshotButton.addEventListener("click", redirectToPage);
+        }
+      }
+      // Redirect to another page
+      function redirectToPage() {
+        window.location.href =
+          "img.html?image=" + encodeURIComponent(getImage());
+      }
+      // Call updateButton initially
+      updateButton();
+
+      // Listen for the 'change' event on controls
+      controls.addEventListener("change", updateButton);
+
+      // Take screenshot
+      function takeScreenshot() {
+        const modelPosition = model.position.clone(); // Store the model's position
+        // model.position.set(0, 0, 0); // Move the model to the origin temporarily
+
+        // Copy contents to off-screen renderer
+        offScreenRenderer.setSize(
+          window.innerWidth * 0.6,
+          window.innerWidth * 0.4
+        );
+        offScreenRenderer.setClearColor(0x000000, 1.0); // Set clear color to transparent
+        document.body.appendChild(offScreenRenderer.domElement);
+        offScreenRenderer.render(scene, camera);
+
+        // Capture off-screen renderer using html2canvas
+        html2canvas(offScreenRenderer.domElement).then(function (canvas) {
+          const screenshotURL = canvas.toDataURL();
+          openScreenshotWindow(screenshotURL);
+          document.body.removeChild(offScreenRenderer.domElement); // Remove the off-screen renderer element
+          //model.position.copy(modelPosition); // Restore the model's original position
+        });
+      }
+
+      // Open screenshot window
+      function openScreenshotWindow(screenshotURL) {
+        const screenshotWindow = window.open("", "_blank");
+        screenshotWindow.document.write(
+          '<img src="' +
+            screenshotURL +
+            '" alt="Screenshot" style="display:block; margin: 0 auto; padding: 50px;">'
+        );
+
+        // Create compare button
+        const compareButton = screenshotWindow.document.createElement("button");
+        compareButton.innerHTML = "Compare Results";
+        compareButton.style.margin = "10px";
+        compareButton.style.display = "flex";
+        compareButton.addEventListener("click", function () {
+          // Perform actions when compare button is clicked
+          // Add your code here
+          screenshotWindow.close();
+          alert("Comparing Results... Please Wait!!!");
+        });
+        screenshotWindow.document.body.appendChild(compareButton);
+
+        // Create exit button
+        const exitButton = screenshotWindow.document.createElement("button");
+        exitButton.innerHTML = "Exit";
+        exitButton.style.margin = "10px";
+        exitButton.style.display = "flex";
+        exitButton.addEventListener("click", function () {
+          screenshotWindow.close();
+          alert("Exited from screenshot mode");
+        });
+        screenshotWindow.document.body.appendChild(exitButton);
+
+        screenshotWindow.document.close();
+      }
+
+      // Resize renderer on window resize
+      window.addEventListener("resize", function () {
+        if (!screenshotButton) {
+          renderer.setSize(window.innerWidth * 0.8, window.innerHeight * 0.8);
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+        }
+      });
+
+      // Append button to the buttons container
+      const buttonsContainer = document.createElement("div");
+      buttonsContainer.id = "buttons-container";
+      // buttonsContainer.appendChild(screenshotButton);
+      // document.body.appendChild(buttonsContainer);
+      buttonsContainer.appendChild(fullScreenButton);
+      document.body.appendChild(buttonsContainer);
+      // Append the button to the canvas container{
+      const canvasContainer = document.getElementById("canvas-container");
+      canvasContainer.appendChild(screenshotButton);
+    </script>
+  </body>
+</html>
