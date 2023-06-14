@@ -6,7 +6,7 @@
     <style>
       body {
         margin-top: 5px;
-        background-color: rgb(19, 19, 19);
+        background-color: black;
         padding-left: 8%;
       }
 
@@ -35,35 +35,13 @@
       }
 
       .heading {
-        color: blue;
+        color: yellow;
         padding-left: 40%;
         font-weight: bolder;
         font-size: larger;
       }
 
-      .name {
-        color: aquamarine;
-        padding-left: 40%;
-      }
-
-      .loader {
-        border: 8px solid #f3f3f3;
-        border-top: 8px solid #3498db;
-        border-radius: 50%;
-        width: 60px;
-        height: 60px;
-        animation: spin 2s linear infinite;
-      }
-
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-
-        100% {
-          transform: rotate(360deg);
-        }
-      }
+      
 
       .top-right-button {
         position: absolute;
@@ -71,37 +49,21 @@
         right: 10px;
       }
 
-      .mode {
-        position: absolute;
-        left: 1em;
-        top: 1em;
-      }
-
-      .buttons {
-        position: fixed;
-        margin: 25px;
-        bottom: 0;
-
-        button {
-          cursor: pointer;
-          padding: 15px;
-          border: none;
-        }
-      }
+    
     </style>
   </head>
 
   <body>
     <section class="content">
       <div class="heading">
-        <h1>3D-IMAGE VIEWER</h1>
+        <h1>3D VIEWER</h1>
       </div>
     </section>
     <div id="canvas-container"></div>
     <div class="buttons">
-      <button class="left-box-btn">Zoom in left box</button>
+      <!-- <button class="left-box-btn">Zoom in left box</button> -->
       <button class="horses-button">Zoom in horses</button>
-      <button class="right-box-btn">Zoom in right box</button>
+      <!-- <button class="right-box-btn">Zoom in right box</button> -->
       <button class="original-btn">Back to original</button>
     </div>
     <div class="mode">
@@ -127,7 +89,7 @@
         1000
       );
       // Set camera position
-      camera.position.z = 5;
+      camera.position.z = 4;
       let zoom1 = false;
       var renderer = new THREE.WebGLRenderer();
       renderer.setSize(window.innerWidth * 0.8, window.innerHeight * 0.8);
@@ -150,45 +112,52 @@
         // zzfactor = 0,
         // azimuthalAngle
       ) => {
+        let z3=-5;
         let tl = gsap
-          .timeline({ defaults: { duration: 1.5, ease: "expo.out" } })
+          .timeline({ defaults: { duration: 1.0, ease: "expo.out" } })
           .to(controls.target, { x0, y, z0 })
           .to(camera.position, { x, y, z: z + zoomOutFactor }, 0);
-        console.log(camera.position);
-        console.log(controls.object.position.distanceTo(controls.target));
-        console.log(camera.position);
+        // //console.log(camera.position);
+        // //console.log(controls.object.position.distanceTo(controls.target));
+        // //console.log(camera.position);
+        // //console.log(imagePlane.position);
 
         // Additional step to update the azimuthal angle
         // controls.azimuthalAngle = azimuthalAngle;
       };
-      leftZoomBtn.addEventListener("click", () => {
-        zoomInTimeline(-2, 0.75, -2, 0, 5);
-        zoom1 = true;
-      });
+      // leftZoomBtn.addEventListener("click", () => {
+      //   zoomInTimeline(-2, 0.75, -2, 0, 5);
+      //   zoom1 = true;
+      // });
       horsesBtn.addEventListener("click", () => {
         zoomInTimeline(
-          1.5 * Math.sin(controls.getAzimuthalAngle()),
+          1 * Math.sin(controls.getAzimuthalAngle()),
           0,
           1.1,
-          1.5 * Math.cos(controls.getAzimuthalAngle()),
-          -3.5,
+          1 * Math.cos(controls.getAzimuthalAngle()),
+          -3.0,
           0
         );
         zoom1 = true;
-      });
-
-      originalBtn.addEventListener("click", () => {
-        zoomInTimeline(0, 0, 0, 0, 0, 5);
+        updateImageTexture2();
         setTimeout(function () {
-          console.log("After the 5-second delay");
-          zoom1 = false;
+          // //console.log("After the 5-second delay");
+          // //console.log(camera.position);
         }, 1500);
       });
 
-      rightZoomBtn.addEventListener("click", () => {
-        zoomInTimeline(2, 0.75, -2, 0, 5);
-        zoom1 = true;
+      originalBtn.addEventListener("click", () => {
+        zoomInTimeline(4*Math.sin(controls.getAzimuthalAngle()), 0, 0, 4*Math.cos(controls.getAzimuthalAngle()), 0, 0);
+        setTimeout(function () {
+          // //console.log("After the 5-second delay");
+          zoom1 = false;
+        }, 500);
       });
+
+      // rightZoomBtn.addEventListener("click", () => {
+      //   zoomInTimeline(2, 0.75, -2, 0, 5);
+      //   zoom1 = true;
+      // });
 
       // Load 3D model
       const loader = new THREE.GLTFLoader();
@@ -199,33 +168,47 @@
           // Center the model
           const bbox = new THREE.Box3().setFromObject(gltf.scene);
           const center = bbox.getCenter(new THREE.Vector3());
-          console.log(center);
+          ////console.log(center);
           const offset = new THREE.Vector3(0, -0.6, 0);
           center.add(offset);
           gltf.scene.position.sub(center);
-          console.log(center);
+          //console.log(center);
           model = gltf.scene;
           scene.add(model);
           // Update function
           function animate() {
             requestAnimationFrame(animate);
             console.log(controls.object.position.distanceTo(controls.target));
-            //console.log(controls.getAzimuthalAngle());
+            // console.log(controls.getAzimuthalAngle());
 
             // Show/hide 3D model based on zoom level
-            if (
-              controls.object.position.distanceTo(controls.target) > 3 ||
-              zoom1
-            ) {
-              model.visible = true;
-              imagePlane.visible = false;
-              controls.enableRotate = true;
+            if (!zoom1) {
+              controls.minDistance = 1.5;
+              if (controls.object.position.distanceTo(controls.target) > 3) {
+                model.visible = true;
+                imagePlane.visible = false;
+                controls.enableRotate = true;
+              } else {
+                model.visible = false;
+                imagePlane.visible = true;
+                controls.enableRotate = false;
+                imagePlane.position.set(0,0,0);
+                //imagePlane.rotation.y =controls.getAzimuthalAngle();
+              }
             } else {
-              model.visible = false;
-              imagePlane.visible = true;
-              controls.enableRotate = false;
-              //imagePlane.rotation.y =controls.getAzimuthalAngle();
+              controls.minDistance = 0;
+              if (controls.object.position.distanceTo(controls.target) > 1.2) {
+                model.visible = true;
+                imagePlane.visible = false;
+                controls.enableRotate = true;
+              } else {
+                model.visible = false;
+                imagePlane.visible = true;
+                controls.enableRotate = false;
+                //imagePlane.rotation.y =controls.getAzimuthalAngle();
+              }
             }
+
             controls.update();
             renderer.render(scene, camera);
           }
@@ -233,7 +216,7 @@
         },
         undefined,
         function (error) {
-          console.error(error);
+          //console.error(error);
         }
       );
 
@@ -255,7 +238,7 @@
       controls.minPolarAngle = Math.PI / 2; // radians
       controls.maxPolarAngle = Math.PI / 2; // radians
       controls.maxDistance = 8;
-      controls.minDistance = 0.5;
+
 
       // Image display
       var imageTexture = new THREE.TextureLoader().load("0_0.jpg");
@@ -279,67 +262,119 @@
         imageTexture = new THREE.TextureLoader().load(getImage());
         imageMaterial.map = imageTexture;
       }
+      // Function to update the imageTexture based on the current azimuthal angle
+      function updateImageTexture2() {
+        imageGeometry = new THREE.PlaneGeometry(1, 1);
+        imageTexture = new THREE.TextureLoader().load(getImage2());
+        imageMaterial.map = imageTexture;
+      }
+      function getImage2() {
+        angle = controls.getAzimuthalAngle();
+        if (angle < -0.5 && angle >= -0.7) {
+          //console.log("Horses-Image-1");
+          imagePlane.position.set(2,0.5,-3);
+          imagePlane.rotation.y=-0.39529;
+          return "horses/0_n39529146908504154.jpg";
+        }
+        else  if (angle < -0.3 && angle >= -0.5) {
+          //console.log("Horses-Image-1");
+          imagePlane.position.set(1,0.5,-3);
+          imagePlane.rotation.y=-0.3;
+          return "horses/0_n35473053760288287.jpg";
+        }
+        else  if (angle < -0.2 && angle >= -0.3 ) {
+          //console.log("Horses-Image-1");
+          imagePlane.position.set(2,0.5,-4);
+          imagePlane.rotation.y=0.14214;
+          return "horses/0_14214335911770237.jpg";
+        }
+        else  if (angle < 0.0 && angle >= -0.2 ) {
+          //console.log("Horses-Image-1");
+          imagePlane.position.set(1,0.5,-4);
+          imagePlane.rotation.y=0.14214;
+          return "horses/0_14214335911770237.jpg";
+        }
+        else  if (angle <= 0.2 && angle >= 0.0 ) {
+          //console.log("Horses-Image-1");
+          imagePlane.position.set(0,0.5,-4);
+          imagePlane.rotation.y=0.14214;
+          return "horses/0_14214335911770237.jpg";
+        }
+        else  if (angle <= 0.42734 && angle > 0.2) {
+          //console.log("Horses-Image-1");
+          imagePlane.position.set(-1,0.5,-4);
+          imagePlane.rotation.y=0.2;
+          return "horses/0_18988753104179357.jpg";
+        }
+        else  {
+          //console.log("Horses-Image-1");
+          imagePlane.position.set(-3,0.5,-4);
+          imagePlane.rotation.y=0.42734;
+          return "horses/0_4273465362722484.jpg";
+        }
+
+      }
 
       // Off-screen renderer
       var offScreenRenderer = new THREE.WebGLRenderer({ alpha: true });
       function getImage() {
         angle = controls.getAzimuthalAngle();
         if (angle >= -0.02744 && angle < 0.0764) {
-          console.log("0.0");
+          //console.log("0.0");
           imagePlane.rotation.y = 0.0764;
           return "outputs/0_0.jpg";
         } else if (angle >= 0.0764 && angle < 0.2135) {
-          console.log("0.1");
+          //console.log("0.1");
           imagePlane.rotation.y = 0.0764;
           return "outputs/0_0.jpg";
         } else if (angle >= 0.2135 && angle < 0.3778) {
-          console.log("0.2");
+          //console.log("0.2");
           imagePlane.rotation.y = 0.2135;
           return "outputs/0_2.jpg";
         } else if (angle >= 0.3778 && angle < 0.52306) {
-          console.log("0.3");
+          //console.log("0.3");
           imagePlane.rotation.y = 0.3778;
           return "outputs/0_3.jpg";
         }
         // else if (angle >= 0.4 && angle < 0.5) {
-        //      console.log("0.4");
+        //      //console.log("0.4");
         //      //imagePlane.rotation.y =;
         //     return "outputs/0_4.jpg";
         // }
         else if (angle >= 0.52306 && angle < 0.649748) {
-          console.log("0.5");
+          //console.log("0.5");
           imagePlane.rotation.y = 0.52306;
           return "outputs/0_5.jpg";
         } else if (angle >= 0.649748 && angle <= 0.7) {
-          console.log("0.6");
+          //console.log("0.6");
           imagePlane.rotation.y = 0.649748;
           return "outputs/0_6.jpg";
         } else if (angle >= -0.12476 && angle < -0.02744) {
-          console.log("-0.1");
+          //console.log("-0.1");
           imagePlane.rotation.y = -0.02744;
           return "outputs/0_n1.jpg";
         } else if (angle >= -0.23646 && angle < -0.12476) {
-          console.log("-0.2");
+          //console.log("-0.2");
           imagePlane.rotation.y = -0.12476;
           return "outputs/0_n2.jpg";
         } else if (angle >= -0.3 && angle < -0.23646) {
-          console.log("-0.3");
+          //console.log("-0.3");
           imagePlane.rotation.y = -0.23646;
           return "outputs/0_n4.jpg";
         } else if (angle >= -0.4069 && angle < -0.3) {
-          console.log("-0.4");
+          //console.log("-0.4");
           imagePlane.rotation.y = -0.23646;
           return "outputs/0_n4.jpg";
         } else if (angle >= -0.5775 && angle < -0.4069) {
-          console.log("-0.5");
+          //console.log("-0.5");
           imagePlane.rotation.y = -0.4069;
           return "outputs/0_n6.jpg";
         } else if (angle >= -0.6 && angle < -0.5775) {
-          console.log("-0.7");
+          //console.log("-0.7");
           imagePlane.rotation.y = -0.5775;
           return "outputs/0_n7.jpg";
         } else {
-          console.log("-0.7");
+          //console.log("-0.7");
           imagePlane.rotation.y = -0.5775;
           return "outputs/0_n7.jpg";
         }
