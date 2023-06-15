@@ -7,7 +7,9 @@
       body {
         margin-top: 5px;
         background-color: black;
-        /* padding-left: 8%; */
+        display: absolute;
+        text-align: center;
+       
       }
       button {
         margin: 0 10;
@@ -19,24 +21,22 @@
 
       .heading {
         color: yellow;
-        padding-left: 40%;
+        /* padding-left: 40%; */
         font-weight: bolder;
-        font-size: larger;
+        font-size: x-large;
+        /* text-align: center; */
       }
-
-      .top-right-button {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-      }
-      #buttons-container{
+      #buttons-container {
         display: flex;
         justify-content: center;
         align-items: center;
         margin-left: 13px;
       }
       #canvas-container{
-        padding-left: 8%;
+        padding-left: 10%;;
+      }
+      #canvas-container.no-padding{
+        padding: 0;;
       }
     </style>
   </head>
@@ -47,12 +47,13 @@
         <h1>3D VIEWER</h1>
       </div>
     </section>
-    <div id="canvas-container"></div>
+    <div class="canvas" id="canvas-container"></div>
     <div id="buttons-container">
       <!-- <button class="left-box-btn">Zoom in left box</button> -->
       <button class="horses-button">Zoom in horses</button>
       <!-- <button class="right-box-btn">Zoom in right box</button> -->
       <button class="original-btn">Back to original</button>
+      <button class="screenshot">Take Screenshot</button>
       <button><a href="vr-mode.html" id="vr">Allow VR</a></button>
       <button class="full-screen">Full Screen</button>
     </div>
@@ -88,7 +89,8 @@
       const originalBtn = document.querySelector(".original-btn");
       const horsesBtn = document.querySelector(".horses-button");
       const rightZoomBtn = document.querySelector(".right-box-btn");
-      const fullScreen=document.querySelector(".full-screen");
+      const fullScreen = document.querySelector(".full-screen");
+      const screenshot = document.querySelector(".screenshot");
 
       const zoomInTimeline = (
         x,
@@ -153,8 +155,8 @@
       //   zoomInTimeline(2, 0.75, -2, 0, 5);
       //   zoom1 = true;
       // });
-         
 
+      let center;
       // Load 3D model
       const loader = new THREE.GLTFLoader();
       var model;
@@ -163,7 +165,7 @@
         function (gltf) {
           // Center the model
           const bbox = new THREE.Box3().setFromObject(gltf.scene);
-          const center = bbox.getCenter(new THREE.Vector3());
+          center = bbox.getCenter(new THREE.Vector3());
           ////console.log(center);
           const offset = new THREE.Vector3(0, -0.6, 0);
           center.add(offset);
@@ -207,6 +209,7 @@
 
             controls.update();
             renderer.render(scene, camera);
+            // updateButton();
           }
           animate();
         },
@@ -369,16 +372,25 @@
       }
 
       // Full screen button
-      fullScreen.addEventListener("click",function () {
-         enterFullscreen();
-        });
+      fullScreen.addEventListener("click", function () {
+        enterFullscreen();
+      });
+
 
       // Enter fullscreen mode
       function enterFullscreen() {
         const canvasContainer = document.getElementById("canvas-container");
+        canvasContainer.classList.add("no-padding");
+        // const cam=camera.position;
+        // console.log(cam);
+        // const offset = new THREE.Vector3(0, -0.6, 0);
+        // cam.add(offset);
+        // console.log(cam);
+        // camera.position.set(cam.x,cam.y,cam.z);
+        // console.log(camera.position);
         if (canvasContainer.requestFullscreen) {
           canvasContainer.requestFullscreen();
-          renderer.setSize(window.innerWidth * 1.5, window.innerHeight * 1.5);
+          renderer.setSize(window.innerWidth * 1, window.innerHeight * 1);
         } else if (canvasContainer.mozRequestFullScreen) {
           // Firefox
           canvasContainer.mozRequestFullScreen();
@@ -394,8 +406,11 @@
 
       // Exit fullscreen mode
       function exitFullscreen() {
+        // camera.position.z=3;
+        const canvasContainer = document.getElementById("canvas-container");
+        canvasContainer.classList.remove("no-padding");
+        console.log(camera.position);
         if (document.exitFullscreen) {
-          document.exitFullscreen();
           renderer.setSize(window.innerWidth * 0.8, window.innerHeight * 0.8);
         } else if (document.mozCancelFullScreen) {
           // Firefox
@@ -416,32 +431,40 @@
         }
       });
 
-      // Screenshot button
-      const screenshotButton = document.createElement("button");
-      screenshotButton.innerHTML = "Take Screenshot";
-      screenshotButton.classList.add("button", "top-right-button");
-      screenshotButton.addEventListener("click", function () {
-        takeScreenshot();
-      });
       // Check zoom level and update button accordingly
       function updateButton() {
-        if (controls.object.position.distanceTo(controls.target) > 3) {
-          screenshotButton.innerHTML = "Take Screenshot";
-          screenshotButton.addEventListener("click", takeScreenshot);
-          screenshotButton.removeEventListener("click", redirectToPage);
+        if (!zoom1) {
+          if (controls.object.position.distanceTo(controls.target) > 3) {
+            screenshot.innerHTML = "Take Screenshot";
+            screenshot.addEventListener("click", takeScreenshot);
+            screenshot.removeEventListener("click", redirectToPage);
+          } else {
+            screenshot.innerHTML = "Play With your Image";
+            screenshot.removeEventListener("click", takeScreenshot);
+            screenshot.addEventListener("click", redirectToPage);
+          }
         } else {
-          screenshotButton.innerHTML = "Play With your Image";
-          screenshotButton.removeEventListener("click", takeScreenshot);
-          screenshotButton.addEventListener("click", redirectToPage);
+          if (controls.object.position.distanceTo(controls.target) > 1.5) {
+            screenshot.innerHTML = "Take Screenshot";
+            screenshot.addEventListener("click", takeScreenshot);
+            screenshot.removeEventListener("click", redirectToPage);
+          } else {
+            screenshot.innerHTML = "Play With your Image";
+            screenshot.removeEventListener("click", takeScreenshot);
+            screenshot.addEventListener("click", redirectToPage);
+          }
         }
       }
       // Redirect to another page
       function redirectToPage() {
-        window.location.href =
-          "img.html?image=" + encodeURIComponent(getImage());
+        if (!zoom1) {
+          window.location.href =
+            "img.html?image=" + encodeURIComponent(getImage());
+        } else {
+          window.location.href =
+            "img.html?image=" + encodeURIComponent(getImage2());
+        }
       }
-      // Call updateButton initially
-      updateButton();
 
       // Listen for the 'change' event on controls
       controls.addEventListener("change", updateButton);
@@ -507,7 +530,7 @@
 
       // Resize renderer on window resize
       window.addEventListener("resize", function () {
-        if (!screenshotButton) {
+        if (!screenshot) {
           renderer.setSize(window.innerWidth * 0.8, window.innerHeight * 0.8);
           camera.aspect = window.innerWidth / window.innerHeight;
           camera.updateProjectionMatrix();
@@ -517,13 +540,13 @@
       // Append button to the buttons container
       const buttonsContainer = document.createElement("span");
       buttonsContainer.id = "buttons-container";
-      // buttonsContainer.appendChild(screenshotButton);
+      // buttonsContainer.appendChild(screenshot);
       // document.body.appendChild(buttonsContainer);
       // buttonsContainer.appendChild(fullScreenButton);
       document.body.appendChild(buttonsContainer);
       // Append the button to the canvas container{
-      const canvasContainer = document.getElementById("canvas-container");
-      canvasContainer.appendChild(screenshotButton);
+      //  const canvasContainer = document.getElementById("canvas-container");
+      //  canvasContainer.appendChild(screenshot);
     </script>
   </body>
 </html>
